@@ -121,7 +121,7 @@ class Reader:
 
         return None
 
-    def get_next_fat_sector(self, current):
+    def _get_next_fat_sector(self, current):
         difat_block = current / (self.sector_size / 4)
         if difat_block < 109:
             self.id.seek(76 + difat_block * 4)
@@ -143,12 +143,12 @@ class Reader:
         self.id.seek(fat_sector_position + (current % (self.sector_size / 4)) * 4)
         return unpack('<L', self.id.read(4))[0]
 
-    def get_next_mini_fat_sector(self, current):
+    def _get_next_mini_fat_sector(self, current):
         current_position = 0
         sector_number = self.first_mini_fat_sector_location
         
         while (current_position + 1) * (self.sector_size / 4) < current:
-            sector_number = self.get_next_fat_sector(sector_number)
+            sector_number = self._get_next_fat_sector(sector_number)
 
         sector_position = (sector_number + 1) << self.sector_shift
         sector_position += current - current_position * (self.sector_size / 4)

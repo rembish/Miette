@@ -1,8 +1,9 @@
-from datetime import datetime
 import os
 import re
+
 from struct import unpack
 from uuid import UUID
+from datetime import datetime
 
 MAXREGSID = 0xfffffffa
 NOSTREAM = 0xffffffff
@@ -23,15 +24,15 @@ from reader import VERSION_3, ENDOFCHAIN
 class DirectoryEntry(object):
     def __init__(self, id, reader, position):
         self.entry_id = id
-        self.reader = reader
+        self._reader = reader
 
-        self.reader.id.seek(position)
+        self._reader.id.seek(position)
 
         (self.name, directory_entry_name_length, self.object_type, \
             self.color_flag, self.left_sibling_id, self.right_sibling_id, \
             self.child_id, self.clsid, self.state_bits, self.creation_time, \
             self.modified_time, self.starting_sector_location, \
-            self.stream_size) = unpack('<64sHBBLLL16sLQQLQ', self.reader.id.read(128))
+            self.stream_size) = unpack('<64sHBBLLL16sLQQLQ', self._reader.id.read(128))
 
         self.name = \
             self.name[:directory_entry_name_length].decode('utf-16').rstrip('\0')
@@ -72,7 +73,7 @@ class DirectoryEntry(object):
             if self.modified_time else None
 
         # Documentation error? [MS-CFB].pdf @ 26
-        # I think most of files sneez on it...
+        # I think most of files sneeze on it...
         #if self.object_type == ROOT_STORAGE_OBJECT:
         #    if self.creation_time:
         #        raise Exception("For a root storage object, Creation Time "
@@ -83,35 +84,51 @@ class DirectoryEntry(object):
         #            + "MUST be all zeroes, and the modified time is retrieved "
         #            + "or set on the compound file itself.")
 
-        if self.reader.major_version == VERSION_3 \
+        if self._reader.major_version == VERSION_3 \
             and self.stream_size > 0x80000000:
             raise Exception("For a version 3 compound file 512-byte sector "
                 + "size, this value of this field MUST be less than or equal "
                 + "to 0x80000000")
 
+        self.is_mini = self.object_type != ROOT_STORAGE_OBJECT \
+            and self.stream_size < self._reader.mini_stream_cutoff_size
+        self.sector_size = self._reader.sector_size if not self.is_mini \
+            else self._reader.mini_sector_size
+        self.sector_shift = self._reader.sector_shift if not self.is_mini \
+            else self._reader.mini_sector_shift
+
         self.seek(0)
 
     def __del__(self):
         # HardRef deleting
-        self.reader = None
+        self._reader = None
 
     @property
     def left_sibling(self):
         if self.left_sibling_id == NOSTREAM:
             return None
-        return self.reader.get_entry_by_id(self.left_sibling_id)
+        return self._reader.get_entry_by_id(self.left_sibling_id)
 
     @property
     def right_sibling(self):
         if self.right_sibling_id == NOSTREAM:
             return None
-        return self.reader.get_entry_by_id(self.right_sibling_id)
+        return self._reader.get_entry_by_id(self.right_sibling_id)
 
     @property
     def child(self):
         if self.child_id == NOSTREAM:
             return None
-        return self.reader.get_entry_by_id(self.child_id)
+        return self._reader.get_entry_by_id(self.child_id)
+
+    @property
+    def _get_next_sector(self):
+        return self._reader._get_next_fat_sector if not self.is_mini \
+            else self._reader._get_next_mini_fat_sector
+
+    @property
+    def reader(self):
+        return self._reader.id if not self.is_mini else self._reader.root_entry
 
     def __repr__(self):
         return u'<Cfb%s#%d %s>' % (self.__class__.__name__, \
@@ -122,54 +139,28 @@ class DirectoryEntry(object):
             size = self.stream_size
 
         buffer = ""
+        while len(buffer) < size:
+            if self._position >= self.stream_size:
+                break
+            if self._sector_number == ENDOFCHAIN:
+                break
 
-        if self.object_type == ROOT_STORAGE_OBJECT \
-            or self.stream_size >= self.reader.mini_stream_cutoff_size:
-            while len(buffer) < size:
-                if self._position >= self.stream_size:
-                    break
-                if self._sector_number == ENDOFCHAIN:
-                    break
+            to_read = size - len(buffer)
+            to_end  = self.sector_size - self._position_in_sector
+            to_do   = min(to_read, to_end)
+            buffer += self.reader.read(to_do)
+            self._position += to_do
 
-                to_read = size - len(buffer)
-                to_end  = self.reader.sector_size - self._position_in_sector
-                to_do   = min(to_read, to_end)
-                buffer += self.reader.id.read(to_do)
-                self._position += to_do
+            if to_read >= to_end:
+                self._position_in_sector = 0
 
-                if to_read >= to_end:
-                    self._position_in_sector = 0
-                    
-                    self._sector_number = \
-                        self.reader.get_next_fat_sector(self._sector_number)
-                    sector_position = (self._sector_number + 1) << \
-                        self.reader.sector_shift
-                    self.reader.id.seek(sector_position)
-                else:
-                    self._position_in_sector += to_do
-        else:
-            while len(buffer) < size:
-                if self._position >= self.stream_size:
-                    break
-                if self._sector_number == ENDOFCHAIN:
-                    break
-
-                to_read = size - len(buffer)
-                to_end  = self.reader.mini_sector_size - self._position_in_sector
-                to_do   = min(to_read, to_end)
-                buffer += self.reader.root_entry.read(to_do)
-                self._position += to_do
-
-                if to_read >= to_end:
-                    self._position_in_sector = 0
-
-                    self._sector_number = \
-                        self.reader.get_next_mini_fat_sector(self._sector_number)
-                    sector_position = self._sector_number << \
-                        self.reader.mini_sector_shift
-                    self.reader.root_entry.seek(sector_position)
-                else:
-                    self._position_in_sector += to_do
+                self._sector_number = \
+                    self._get_next_sector(self._sector_number)
+                sector_position = (self._sector_number + int(not self.is_mini)) << \
+                    self.sector_shift
+                self.reader.seek(sector_position)
+            else:
+                self._position_in_sector += to_do
 
         return buffer[:size]
 
@@ -183,32 +174,19 @@ class DirectoryEntry(object):
             offset = self.stream_size - offset
 
         self._position = offset
-
         self._sector_number = self.starting_sector_location
-        if self.object_type == ROOT_STORAGE_OBJECT \
-            or self.stream_size >= self.reader.mini_stream_cutoff_size:
+        current_position = 0
 
-            current_position = 0
-            while self._sector_number != ENDOFCHAIN \
-                and (current_position + 1) * self.reader.sector_size < offset:
-                self._sector_number = self.reader.get_next_fat_sector(self._sector_number)
-                current_position += 1
+        while self._sector_number != ENDOFCHAIN \
+            and (current_position + 1) * self.sector_size < offset:
+            self._sector_number = self._get_next_sector(self._sector_number)
+            current_position += 1
 
-            self._position_in_sector = offset - current_position * self.reader.sector_size
-            sector_position = (self._sector_number + 1) << self.reader.sector_shift
-            sector_position += self._position_in_sector
-            self.reader.id.seek(sector_position)
-        else:
-            current_position = 0
-            while self._sector_number != ENDOFCHAIN \
-                and (current_position + 1) * self.reader.mini_sector_size < offset:
-                self._sector_number = self.reader.get_next_mini_fat_sector(self._sector_number)
-                current_position += 1
-
-            self._position_in_sector = offset - current_position * self.reader.mini_sector_size
-            sector_position = self._sector_number << self.reader.mini_sector_shift
-            sector_position += self._position_in_sector
-            self.reader.root_entry.seek(sector_position)
+        self._position_in_sector = offset - current_position * self.sector_size
+        sector_position = (self._sector_number + int(not self.is_mini)) << self.sector_shift
+        sector_position += self._position_in_sector
+        
+        self.reader.seek(sector_position)
             
     def _filetime2timestamp(self, filetime):
         return datetime.utcfromtimestamp((filetime - EPOCH_AS_FILETIME) / \
