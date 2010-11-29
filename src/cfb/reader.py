@@ -13,6 +13,19 @@ from entry import DirectoryEntry
 
 class Reader:
     def __init__(self, filename):
+        '''
+            Compound File Binary File Format Reader
+
+            Usage example:
+            >>> cfb = Reader('document.doc')
+            >>> word_document = cfb.root_entry.child.left_sibling
+            >>> print word_document.read()
+
+            >>> one_table = cfb.get_entry_by_name('1Table')
+            >>> one_table.seek(100)
+            >>> print one_table.read(16)
+            >>> print one_table.tell()
+        '''
         self.filename = filename
         self.id = open(self.filename, 'rb')
 
