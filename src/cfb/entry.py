@@ -16,9 +16,6 @@ ROOT_STORAGE_OBJECT = 0x05
 RED = 0x00
 BLACK = 0x01
 
-EPOCH_AS_FILETIME = 116444736000000000L  # January 1, 1970 as MS file time
-HUNDREDS_OF_NANOSECONDS = 10000000
-
 from reader import VERSION_3, ENDOFCHAIN
 
 class DirectoryEntry(object):
@@ -90,11 +87,11 @@ class DirectoryEntry(object):
                 + "size, this value of this field MUST be less than or equal "
                 + "to 0x80000000")
 
-        self.is_mini = self.object_type != ROOT_STORAGE_OBJECT \
+        self.is_mini_sector = self.object_type != ROOT_STORAGE_OBJECT \
             and self.stream_size < self._reader.mini_stream_cutoff_size
-        self.sector_size = self._reader.sector_size if not self.is_mini \
+        self.sector_size = self._reader.sector_size if not self.is_mini_sector \
             else self._reader.mini_sector_size
-        self.sector_shift = self._reader.sector_shift if not self.is_mini \
+        self.sector_shift = self._reader.sector_shift if not self.is_mini_sector \
             else self._reader.mini_sector_shift
 
         self.seek(0)
@@ -103,40 +100,56 @@ class DirectoryEntry(object):
         # HardRef deleting
         self._reader = None
 
+    def __repr__(self):
+        return u'<Cfb%s#%d %s>' % (self.__class__.__name__, \
+            self.entry_id, repr(self.name))
+
     @property
     def left_sibling(self):
+        '''
+            Tunneling to left sibling
+        '''
         if self.left_sibling_id == NOSTREAM:
             return None
         return self._reader.get_entry_by_id(self.left_sibling_id)
 
     @property
     def right_sibling(self):
+        '''
+            Tunneling to right sibling
+        '''
         if self.right_sibling_id == NOSTREAM:
             return None
         return self._reader.get_entry_by_id(self.right_sibling_id)
 
     @property
     def child(self):
+        '''
+            Tunneling to child (root entry only)
+        '''
         if self.child_id == NOSTREAM:
             return None
         return self._reader.get_entry_by_id(self.child_id)
 
     @property
-    def _get_next_sector(self):
-        return self._reader._get_next_fat_sector if not self.is_mini \
-            else self._reader._get_next_mini_fat_sector
-
-    @property
     def reader(self):
-        return self._reader.id if not self.is_mini else self._reader.root_entry
-
-    def __repr__(self):
-        return u'<Cfb%s#%d %s>' % (self.__class__.__name__, \
-            self.entry_id, repr(self.name))
+        '''
+            Link to stream reader: file object for standard streams
+            and root entry storage for mini streams
+        '''
+        return self._reader.id if not self.is_mini_sector \
+            else self._reader.root_entry
 
     def read(self, size=None):
+        '''
+            Read at most size bytes from the stream (less if the read hits EOS
+            before obtaining size bytes). If the size argument is negative or
+            omitted, read all data until EOS is reached. The bytes are returned
+            as a string object. An empty string is returned when EOS is
+            encountered immediately.
+        '''
         if not size or size < 0:
-            size = self.stream_size
+            size = self.stream_size - self.tell()
 
         buffer = ""
         while len(buffer) < size:
@@ -156,8 +169,8 @@ class DirectoryEntry(object):
 
                 self._sector_number = \
                     self._get_next_sector(self._sector_number)
-                sector_position = (self._sector_number + int(not self.is_mini)) << \
-                    self.sector_shift
+                sector_position = (self._sector_number + \
+                    int(not self.is_mini_sector)) << self.sector_shift
                 self.reader.seek(sector_position)
             else:
                 self._position_in_sector += to_do
@@ -165,9 +178,19 @@ class DirectoryEntry(object):
         return buffer[:size]
 
     def tell(self):
+        '''
+            Return the stream’s current position, like file‘s tell().
+        '''
         return self._position
 
     def seek(self, offset, whence=os.SEEK_SET):
+        '''
+            Set the stream’s current position, like file‘s seek(). The whence
+            argument is optional and defaults to os.SEEK_SET or 0 (absolute
+            stream positioning); other values are os.SEEK_CUR or 1 (seek
+            relative to the current position) and os.SEEK_END or 2 (seek
+            relative to the stream’s end). There is no return value.
+        '''
         if whence == os.SEEK_CUR:
             offset += self.tell()
         elif whence == os.SEEK_END:
@@ -183,11 +206,23 @@ class DirectoryEntry(object):
             current_position += 1
 
         self._position_in_sector = offset - current_position * self.sector_size
-        sector_position = (self._sector_number + int(not self.is_mini)) << self.sector_shift
+        sector_position = (self._sector_number + int(not self.is_mini_sector)) \
+            << self.sector_shift
         sector_position += self._position_in_sector
         
         self.reader.seek(sector_position)
+
+    def _get_next_sector(self, current):
+        '''
+            Wrapper to the reader source get_next_fat_sector/get_next_mini_fat_sector
+            methods. Transparent to all stream sizes.
+        '''
+        return self._reader._get_next_fat_sector(current) if not self.is_mini_sector \
+            else self._reader._get_next_mini_fat_sector(current)
             
     def _filetime2timestamp(self, filetime):
-        return datetime.utcfromtimestamp((filetime - EPOCH_AS_FILETIME) / \
-            HUNDREDS_OF_NANOSECONDS)
+        '''
+            Convert Microsoft OLE time to datetime object
+            116444736000000000L is January 1, 1970
+        '''
+        return datetime.utcfromtimestamp((filetime - 116444736000000000L) / 10000000)

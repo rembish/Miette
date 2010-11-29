@@ -1,4 +1,3 @@
-import os
 from os.path import basename
 from struct import unpack
 
@@ -79,6 +78,9 @@ class Reader:
 
     @property
     def root_entry(self):
+        '''
+            Tunneling to root entry storage
+        '''
         if not self._root_entry:
             sector_number = self.first_directory_sector_location
             sector_position = (sector_number + 1) << self.sector_shift
@@ -88,6 +90,9 @@ class Reader:
         return self._root_entry
 
     def get_entry_by_id(self, entry_id):
+        '''
+            Get directory entry object (stream or storage) by it's id
+        '''
         if entry_id in self._directory:
             return self._directory[entry_id]
 
@@ -103,6 +108,11 @@ class Reader:
         return self._directory[entry_id]
 
     def get_entry_by_name(self, name):
+        '''
+            Get directory entry object (stream or storage) by it's name.
+            Implements Microsoft Red-Black tree search algorithm. See
+            [MS-CFB].doc @ 2.6.4 (pages 27-28).
+        '''
         if self.root_entry.name == name:
             return self.root_entry
         current = self.root_entry.child
@@ -122,6 +132,9 @@ class Reader:
         return None
 
     def _get_next_fat_sector(self, current):
+        '''
+            Get next FAT sector block number
+        '''
         difat_block = current / (self.sector_size / 4)
         if difat_block < 109:
             self.id.seek(76 + difat_block * 4)
@@ -141,9 +154,13 @@ class Reader:
         fat_sector = unpack('<L', self.id.read(4))[0]
         fat_sector_position = (fat_sector + 1) << self.sector_shift
         self.id.seek(fat_sector_position + (current % (self.sector_size / 4)) * 4)
+        
         return unpack('<L', self.id.read(4))[0]
 
     def _get_next_mini_fat_sector(self, current):
+        '''
+            Get next mini FAT sector block number
+        '''
         current_position = 0
         sector_number = self.first_mini_fat_sector_location
         
