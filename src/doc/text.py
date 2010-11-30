@@ -6,6 +6,14 @@ from struct import unpack
 
 class DocTextReader(Reader):
     def __init__(self, filename):
+        '''
+            Microsoft Word Document Reader (no markup)
+
+            Usage example:
+            >>> doc = DocTextReader('document.doc')
+            >>> print doc.read()
+            >>> print doc.word_document.get_short(0x000a)
+        '''
         super(DocTextReader, self).__init__(filename)
         self._word_document = None
         self._n_table = None
@@ -15,12 +23,18 @@ class DocTextReader(Reader):
 
     @property
     def word_document(self):
+        '''
+            Tunneling for WordDocument stream
+        '''
         if not self._word_document:
             self._word_document = self.get_entry_by_name('WordDocument')
         return self._word_document
 
     @property
     def n_table(self):
+        '''
+            Tunneling for 0Table/1Table stream
+        '''
         if not self._n_table:
             a_to_m = self.word_document.get_short(0x000a)
             n_table_name = '1Table' if (a_to_m & 0x0200) == 0x0200 else '0Table'
@@ -29,6 +43,9 @@ class DocTextReader(Reader):
         return self._n_table
 
     def read(self, size=None):
+        '''
+            read(size) prototype
+        '''
         self.word_document.seek(0x004c)
         (ccp_text, ccp_ftn, ccp_hdd, ccp_mcr, ccp_atn, ccp_edn, ccp_txbx, \
             ccp_hdr_txbx) = unpack('<LLLLLLLL', self.word_document.read(32))
