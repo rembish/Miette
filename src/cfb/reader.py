@@ -112,7 +112,7 @@ class Reader(object):
         sector_number = self.first_directory_sector_location
         current_entry = 0
         while ((current_entry + 1) * (self.sector_size / 128)) < entry_id:
-            sector_number = self.get_next_fat_sector(sector_number)
+            sector_number = self._get_next_fat_sector(sector_number)
             current_entry += 1
 
         sector_position = (sector_number + 1) << self.sector_shift
