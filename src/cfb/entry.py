@@ -179,17 +179,17 @@ class DirectoryEntry(object):
 
     def tell(self):
         '''
-            Return the stream’s current position, like file‘s tell().
+            Return the stream's current position, like file's tell().
         '''
         return self._position
 
     def seek(self, offset, whence=os.SEEK_SET):
         '''
-            Set the stream’s current position, like file‘s seek(). The whence
+            Set the stream's current position, like file's seek(). The whence
             argument is optional and defaults to os.SEEK_SET or 0 (absolute
             stream positioning); other values are os.SEEK_CUR or 1 (seek
             relative to the current position) and os.SEEK_END or 2 (seek
-            relative to the stream’s end). There is no return value.
+            relative to the stream's end). There is no return value.
         '''
         if whence == os.SEEK_CUR:
             offset += self.tell()
@@ -211,6 +211,18 @@ class DirectoryEntry(object):
         sector_position += self._position_in_sector
         
         self.reader.seek(sector_position)
+
+    def get_byte(self, start):
+        self.seek(start)
+        return unpack('<B', self.read(1))[0]
+
+    def get_short(self, start):
+        self.seek(start)
+        return unpack('<H', self.read(2))[0]
+
+    def get_long(self, start):
+        self.seek(start)
+        return unpack('<L', self.read(4))[0]
 
     def _get_next_sector(self, current):
         '''

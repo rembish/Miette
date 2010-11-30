@@ -11,7 +11,7 @@ FREESECT = 0xffffffff
 
 from entry import DirectoryEntry
 
-class Reader:
+class Reader(object):
     def __init__(self, filename):
         '''
             Compound File Binary File Format Reader
