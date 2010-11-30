@@ -1,3 +1,6 @@
+import os
+
+from os.path import basename
 from cfb.reader import Reader
 from struct import unpack
 
@@ -6,6 +9,9 @@ class DocTextReader(Reader):
         super(DocTextReader, self).__init__(filename)
         self._word_document = None
         self._n_table = None
+
+    def __repr__(self):
+        return u'<DocReader %s@%d>' % (basename(self.filename), self.id.tell())
 
     @property
     def word_document(self):
@@ -22,7 +28,7 @@ class DocTextReader(Reader):
 
         return self._n_table
 
-    def get_raw_text(self):
+    def read(self, size=None):
         self.word_document.seek(0x004c)
         (ccp_text, ccp_ftn, ccp_hdd, ccp_mcr, ccp_atn, ccp_edn, ccp_txbx, \
             ccp_hdr_txbx) = unpack('<LLLLLLLL', self.word_document.read(32))
@@ -41,7 +47,7 @@ class DocTextReader(Reader):
 
             pos += 2
             if cb_grpprl > 0x3fa2:
-                raise Exception()
+                raise Exception('cbGrpprl MUST be less than or equal to 0x3FA2.')
 
             pos += cb_grpprl
             clxt = self.n_table.get_byte(pos)
@@ -52,9 +58,9 @@ class DocTextReader(Reader):
 
             fc_plc_pcd = pos + 4
             if lcb != lcb_clx - 5:
-                raise Exception()
+                raise Exception('Wrong size of PlcPcd structure')
         else:
-            raise Exception()
+            raise Exception('clxt MUST be 0x02')
 
         cp = []
         self.n_table.seek(fc_plc_pcd)
@@ -64,7 +70,7 @@ class DocTextReader(Reader):
                 break
 
         if not len(cp) or cp[-1] != last_cp:
-            raise Exception()
+            raise Exception('Last found CP MUST be equal to lastCP')
 
         parts = []
         for i in range(0, lcb_clx - (self.n_table.tell() - fc_clx), 8):
@@ -90,3 +96,9 @@ class DocTextReader(Reader):
                 buffer += self.word_document.read(length)
 
         return buffer.encode('utf-8')
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        raise NotImplementedError('seek')
+
+    def tell(self):
+        raise NotImplementedError('tell')
