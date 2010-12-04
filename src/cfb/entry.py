@@ -18,7 +18,7 @@ BLACK = 0x01
 
 from reader import VERSION_3, ENDOFCHAIN
 
-class DirectoryEntry(object):
+class Entry(object):
     def __init__(self, id, reader, position):
         self.entry_id = id
         self._reader = reader
@@ -39,7 +39,7 @@ class DirectoryEntry(object):
                 + "NOT be part of the name: '/', '\\', ':', '!'.");
 
         if self.object_type == UNALLOCATED:
-            raise Exception("Can't create DirectoryEntry object for unallocated place")
+            raise Exception("Can't create Directory Entry object for unallocated place")
 
         if self.object_type not in (STORAGE_OBJECT, STREAM_OBJECT, ROOT_STORAGE_OBJECT):
             raise Exception("Object Type MUST be 0x00, 0x01, 0x02, or 0x05, "

@@ -1,3 +1,4 @@
+import os
 from os.path import basename
 from struct import unpack
 
@@ -9,9 +10,9 @@ VERSION_4 = 0x0004
 ENDOFCHAIN = 0xfffffffe
 FREESECT = 0xffffffff
 
-from entry import DirectoryEntry
+from entry import Entry
 
-class Reader(object):
+class CfbReader(object):
     def __init__(self, filename):
         '''
             Compound File Binary File Format Reader
@@ -86,8 +87,8 @@ class Reader(object):
         self.id.close()
 
     def __repr__(self):
-        return u'<Cfb%s %s@%d>' % (self.__class__.__name__, \
-            basename(self.filename), self.id.tell())
+        return u'<%s %s@%d>' % (self.__class__.__name__, \
+            basename(self.filename), self.tell())
 
     @property
     def root_entry(self):
@@ -97,10 +98,19 @@ class Reader(object):
         if not self._root_entry:
             sector_number = self.first_directory_sector_location
             sector_position = (sector_number + 1) << self.sector_shift
-            self._root_entry = DirectoryEntry(0, self, sector_position)
+            self._root_entry = Entry(0, self, sector_position)
             self._directory[0] = self._root_entry
 
         return self._root_entry
+
+    def read(self, size=None):
+        return self.id.read(size)
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        return self.id.seek(offset, whence)
+
+    def tell(self):
+        return self.id.tell()
 
     def get_entry_by_id(self, entry_id):
         '''
@@ -117,7 +127,7 @@ class Reader(object):
 
         sector_position = (sector_number + 1) << self.sector_shift
         sector_position += (entry_id - current_entry * (self.sector_size / 128)) * 128
-        self._directory[entry_id] = DirectoryEntry(entry_id, self, sector_position)
+        self._directory[entry_id] = Entry(entry_id, self, sector_position)
         return self._directory[entry_id]
 
     def get_entry_by_name(self, name):

@@ -1,25 +1,30 @@
 import os
 
-from os.path import basename
-from cfb.reader import Reader
+from cfb.reader import CfbReader
 from struct import unpack
 
-class DocTextReader(Reader):
+class DocReader(CfbReader):
     def __init__(self, filename):
         '''
             Microsoft Word Document Reader (no markup)
 
             Usage example:
-            >>> doc = DocTextReader('document.doc')
+            >>> doc = DocReader('document.doc')
             >>> print doc.read()
             >>> print doc.word_document.get_short(0x000a)
         '''
-        super(DocTextReader, self).__init__(filename)
+        super(DocReader, self).__init__(filename)
         self._word_document = None
         self._n_table = None
 
-    def __repr__(self):
-        return u'<DocReader %s@%d>' % (basename(self.filename), self.id.tell())
+        self.cp = []
+        self.length = None
+        self._start_of_pcd = None
+
+        self._read_clx()
+
+        self._position = 0
+        self.seek(0)
 
     @property
     def word_document(self):
@@ -44,7 +49,79 @@ class DocTextReader(Reader):
 
     def read(self, size=None):
         '''
-            read(size) prototype
+            Read at most size bytes from .doc file (less if the read hits EOF
+            before obtaining size bytes). If the size argument is negative or
+            omitted, read all data until EOF is reached. The bytes are returned
+            as a string object. An empty string is returned when EOF is
+            encountered immediately.
+        '''
+
+        if size == None:
+            size = self.length - self.tell()
+
+        buffer = ""
+
+        for i in range(len(self.cp) - 1):
+            if self.cp[i + 1] < self.tell():
+                continue
+
+            self.n_table.seek(self._start_of_pcd + i * 8 + 2)
+            fc = unpack('<L', self.n_table.read(4))[0]
+            
+            length = self.cp[i + 1] - self.cp[i]
+            fc_f_compressed = (fc & 0x40000000) == 0x40000000
+            fc_fc = fc & 0x3fffffff
+
+
+            fc_fc += (self.tell() - self.cp[i]) * (2 if not fc_f_compressed else 1)
+            length -= (self.tell() - self.cp[i]) * (1 if not fc_f_compressed else 2)
+            if length > (size - len(buffer)):
+                length = size - len(buffer)
+
+            if fc_f_compressed:
+                fc_fc /= 2
+            else:
+                length *= 2
+
+            self.word_document.seek(fc_fc)
+            part = self.word_document.read(length).decode('utf-16')
+            buffer += part
+            self._position += len(part)
+
+            if len(buffer) >= size:
+                break
+
+        return buffer.encode('utf-8')
+
+    def tell(self):
+        '''
+            Return the .doc's current position, like file's tell().
+        '''
+        return self._position
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        '''
+            Set the .doc's current position, like file's seek(). The whence
+            argument is optional and defaults to os.SEEK_SET or 0 (absolute
+            stream positioning); other values are os.SEEK_CUR or 1 (seek
+            relative to the current position) and os.SEEK_END or 2 (seek
+            relative to the .doc's end). There is no return value.
+        '''
+        if whence == os.SEEK_SET:
+            self._position = offset
+        elif whence == os.SEEK_CUR:
+            self._position += offset
+        elif whence == os.SEEK_END:
+            self._position = self.length - offset
+
+        if self._position < 0:
+            self._position = 0
+        elif self._position > self.length:
+            self._position = self.length
+
+    def _read_clx(self):
+        '''
+            Internal CLX work
         '''
         self.word_document.seek(0x004c)
         (ccp_text, ccp_ftn, ccp_hdd, ccp_mcr, ccp_atn, ccp_edn, ccp_txbx, \
@@ -77,45 +154,15 @@ class DocTextReader(Reader):
             if lcb != lcb_clx - 5:
                 raise Exception('Wrong size of PlcPcd structure')
         else:
-            raise Exception('clxt MUST be 0x02')
+            raise Exception('PlcPcd.clxt MUST be 0x02')
 
-        cp = []
         self.n_table.seek(fc_plc_pcd)
         for i in range(0, lcb_clx - (fc_plc_pcd - fc_clx), 4):
-            cp.append(unpack('<L', self.n_table.read(4))[0])
-            if cp[-1] == last_cp:
-                break
+            self.cp.append(unpack('<L', self.n_table.read(4))[0])
+            if self.cp[-1] == last_cp:
+                self._start_of_pcd = self.n_table.tell()
+                self.length = self.cp[-1] - self.cp[0]
 
-        if not len(cp) or cp[-1] != last_cp:
-            raise Exception('Last found CP MUST be equal to lastCP')
+                return
 
-        parts = []
-        for i in range(0, lcb_clx - (self.n_table.tell() - fc_clx), 8):
-            (abc_fr2, fc, prm) = unpack('<HLH', self.n_table.read(8))
-            fc_f_compressed = (fc & 40000000) == 40000000
-            fc_fc = fc & 0x3fffffff
-
-            j = i / 8
-            length = cp[j + 1] - cp[j]
-            if fc_f_compressed:
-                fc_fc /= 2
-            else:
-                length *= 2
-
-            parts.append((fc_fc, length, fc_f_compressed))
-
-        buffer = ""
-        for (start, length, compressed) in parts:
-            self.word_document.seek(start)
-            if not compressed:
-                buffer += self.word_document.read(length).decode('utf-16')
-            else:
-                buffer += self.word_document.read(length)
-
-        return buffer.encode('utf-8')
-
-    def seek(self, offset, whence=os.SEEK_SET):
-        raise NotImplementedError('seek')
-
-    def tell(self):
-        raise NotImplementedError('tell')
+        raise Exception('Last found CP MUST be equal to lastCP')
