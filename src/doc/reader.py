@@ -91,7 +91,7 @@ class DocReader(CfbReader):
             if len(buffer) >= size:
                 break
 
-        return buffer.encode('utf-8')
+        return buffer.encode('utf-8')[:size]
 
     def tell(self):
         '''
