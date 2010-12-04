@@ -33,6 +33,10 @@ class DocReader(CfbReader):
         '''
         if not self._word_document:
             self._word_document = self.get_entry_by_name('WordDocument')
+            w_ident = self._word_document.get_short(0x0000)
+            if w_ident != 0xa5ec:
+                raise Exception('wIdent is an unsigned integer that specifies '
+                    + 'that this is a Word Binary File. This value MUST be 0xA5EC.')
         return self._word_document
 
     @property

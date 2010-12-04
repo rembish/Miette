@@ -44,6 +44,8 @@ class CfbReader(object):
             self.mini_sector_shift) = unpack('<HHHHH', self.id.read(10))
 
         if self.major_version not in (VERSION_3, VERSION_4):
+            # Minor Version SHOULD (but MUST NOT) be set to 0x003E if the
+            # major version field is either 0x0003 or 0x0004.
             raise Exception("Major Version MUST be set to either 0x0003 "
                 + "(version 3) or 0x0004 (version 4).")
 
