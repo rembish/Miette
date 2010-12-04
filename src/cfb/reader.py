@@ -43,8 +43,7 @@ class CfbReader(object):
         (minor_version, self.major_version, byte_order, self.sector_shift, \
             self.mini_sector_shift) = unpack('<HHHHH', self.id.read(10))
 
-        if self.major_version not in (VERSION_3, VERSION_4) or \
-            minor_version != 0x003e:
+        if self.major_version not in (VERSION_3, VERSION_4):
             raise Exception("Major Version MUST be set to either 0x0003 "
                 + "(version 3) or 0x0004 (version 4).")
 
@@ -104,7 +103,7 @@ class CfbReader(object):
         return self._root_entry
 
     def read(self, size=None):
-        return self.id.read(size)
+        return self.id.read(size if size else -1)
 
     def seek(self, offset, whence=os.SEEK_SET):
         return self.id.seek(offset, whence)
@@ -121,7 +120,8 @@ class CfbReader(object):
 
         sector_number = self.first_directory_sector_location
         current_entry = 0
-        while ((current_entry + 1) * (self.sector_size / 128)) < entry_id:
+        while sector_number != ENDOFCHAIN and \
+            ((current_entry + 1) * (self.sector_size / 128)) < entry_id:
             sector_number = self._get_next_fat_sector(sector_number)
             current_entry += 1
 
@@ -187,11 +187,16 @@ class CfbReader(object):
         current_position = 0
         sector_number = self.first_mini_fat_sector_location
         
-        while (current_position + 1) * (self.sector_size / 4) < current:
+        while sector_number != ENDOFCHAIN and \
+            (current_position + 1) * (self.sector_size / 4) < current:
             sector_number = self._get_next_fat_sector(sector_number)
+            current_position += 1
+
+        if sector_number == ENDOFCHAIN:
+            return ENDOFCHAIN
 
         sector_position = (sector_number + 1) << self.sector_shift
-        sector_position += current - current_position * (self.sector_size / 4)
+        sector_position += (current - current_position * (self.sector_size / 4)) * 4
         self.id.seek(sector_position)
         
         return unpack('<L', self.id.read(4))[0]
