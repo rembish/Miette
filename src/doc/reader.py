@@ -76,7 +76,6 @@ class DocReader(CfbReader):
             fc_f_compressed = (fc & 0x40000000) == 0x40000000
             fc_fc = fc & 0x3fffffff
 
-
             fc_fc += (self.tell() - self.cp[i]) * (2 if not fc_f_compressed else 1)
             length -= (self.tell() - self.cp[i]) * (1 if not fc_f_compressed else 2)
             if length > (size - len(buffer)):
@@ -88,14 +87,16 @@ class DocReader(CfbReader):
                 length *= 2
 
             self.word_document.seek(fc_fc)
-            part = self.word_document.read(length).decode('utf-16')
+            part = self.word_document.read(length)
+            if not fc_f_compressed:
+                part = part.decode('utf-16')
             buffer += part
             self._position += len(part)
 
             if len(buffer) >= size:
                 break
 
-        return buffer.encode('utf-8')[:size]
+        return buffer[:size].encode('utf-8')
 
     def tell(self):
         '''

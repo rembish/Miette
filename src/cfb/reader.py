@@ -123,7 +123,7 @@ class CfbReader(object):
         sector_number = self.first_directory_sector_location
         current_entry = 0
         while sector_number != ENDOFCHAIN and \
-            ((current_entry + 1) * (self.sector_size / 128)) < entry_id:
+            (current_entry + 1) * (self.sector_size / 128) <= entry_id:
             sector_number = self._get_next_fat_sector(sector_number)
             current_entry += 1
 
@@ -190,7 +190,7 @@ class CfbReader(object):
         sector_number = self.first_mini_fat_sector_location
         
         while sector_number != ENDOFCHAIN and \
-            (current_position + 1) * (self.sector_size / 4) < current:
+            (current_position + 1) * (self.sector_size / 4) <= current:
             sector_number = self._get_next_fat_sector(sector_number)
             current_position += 1
 
