@@ -21,25 +21,32 @@ packages = [
 
 requires = []
 
+with open('README') as file:
+    long_desc = file.read(),
+
 setup(
     name='miette',
     version=miette.__version__,
     description='Miette is a light-weight Microsoft Office documents reader',
+    long_description=long_desc,
     author='Alex Rembish',
     author_email='alex@rembish.ru',
     packages=packages,
-    #package_data={'': ['LICENSE'],},
+    package_data={'': ['README', 'LICENSE'], },
     package_dir={'miette': 'miette'},
     include_package_data=True,
     install_requires=requires,
-    #license=open('LICENSE').read(),
-    zip_safe=False,
+    license='GPLv3',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Text Processing'
     ),
 )
