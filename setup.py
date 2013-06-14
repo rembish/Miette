@@ -30,7 +30,7 @@ setup(
     description='Miette is a light-weight Microsoft Office documents reader',
     long_description=long_desc,
     author='Alex Rembish',
-    author_email='alex@rembish.ru',
+    author_email='alex@rembish.org',
     packages=packages,
     package_data={'': ['README', 'LICENSE'], },
     package_dir={'miette': 'miette'},
