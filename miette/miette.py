@@ -1,8 +1,6 @@
 # Miette is "small sweet thing" in french
 
-from cfb.reader import CfbReader
 from doc.reader import DocReader
-from tools import hex_dump
 
 r = DocReader('../tests/doc/mw_lorem_ipsum.doc')
 #r = DocReader('../tests/doc/gd_lorem_ipsum.doc')
