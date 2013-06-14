@@ -21,8 +21,8 @@ packages = [
 
 requires = []
 
-with open('README') as file:
-    long_desc = file.read(),
+with open('README') as readmeFile:
+    long_desc = readmeFile.read()
 
 setup(
     name='miette',
@@ -36,11 +36,11 @@ setup(
     package_dir={'miette': 'miette'},
     include_package_data=True,
     install_requires=requires,
-    license='GPLv3',
+    license='BSD',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
