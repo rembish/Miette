@@ -1,7 +1,7 @@
 import os
 from struct import unpack
 
-from ..cfb.reader import CfbReader
+from miette.cfb.reader import CfbReader
 
 
 class DocReader(CfbReader):

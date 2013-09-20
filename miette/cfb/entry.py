@@ -5,18 +5,7 @@ from struct import unpack
 from uuid import UUID
 from datetime import datetime
 
-MAXREGSID = 0xfffffffa
-NOSTREAM = 0xffffffff
-
-UNALLOCATED = 0x00
-STORAGE_OBJECT = 0x01
-STREAM_OBJECT = 0x02
-ROOT_STORAGE_OBJECT = 0x05
-
-RED = 0x00
-BLACK = 0x01
-
-from reader import VERSION_3, ENDOFCHAIN
+from miette.cfb.constants import *
 
 
 class Entry(object):

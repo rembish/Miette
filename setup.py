@@ -1,25 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
-import miette as miette
+import miette
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
-
-packages = [
-    'miette',
-    'miette.doc',
-    'miette.cfb',
-    'miette.tools'
-]
-
-requires = []
 
 with open('README') as readmeFile:
     long_desc = readmeFile.read()
@@ -31,11 +19,10 @@ setup(
     long_description=long_desc,
     author='Alex Rembish',
     author_email='alex@rembish.org',
-    packages=packages,
+    packages=find_packages(),
     package_data={'': ['README', 'LICENSE'], },
-    package_dir={'miette': 'miette'},
     include_package_data=True,
-    install_requires=requires,
+    install_requires=[],
     license='BSD',
     classifiers=(
         'Development Status :: 5 - Production/Stable',

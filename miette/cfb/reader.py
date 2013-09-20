@@ -1,16 +1,10 @@
 import os
+
 from os.path import basename
 from struct import unpack
 
-CLSID_NULL = '\0' * 16
-
-VERSION_3 = 0x0003
-VERSION_4 = 0x0004
-
-ENDOFCHAIN = 0xfffffffe
-FREESECT = 0xffffffff
-
-from entry import Entry
+from miette.cfb.entry import Entry
+from miette.cfb.constants import *
 
 
 class CfbReader(object):
