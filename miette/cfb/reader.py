@@ -13,6 +13,7 @@ class CfbReader(object):
             Compound File Binary File Format Reader
 
             Usage example:
+            >>> from miette.cfb.reader import CfbReader
             >>> cfb = CfbReader('document.doc')
             >>> word_document = cfb.root_entry.child.left_sibling
             >>> print word_document.read()

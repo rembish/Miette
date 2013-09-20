@@ -1,7 +1,7 @@
 #!/usr/bin/env python
+
 import os
 import sys
-import miette
 
 from setuptools import setup, find_packages
 
@@ -14,14 +14,12 @@ with open('README') as readmeFile:
 
 setup(
     name='miette',
-    version=miette.__version__,
+    version='1.2',
     description='Miette is a light-weight Microsoft Office documents reader',
     long_description=long_desc,
     author='Alex Rembish',
     author_email='alex@rembish.org',
     packages=find_packages(),
-    package_data={'': ['README', 'LICENSE'], },
-    include_package_data=True,
     install_requires=[],
     license='BSD',
     classifiers=(

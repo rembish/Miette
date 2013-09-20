@@ -16,4 +16,3 @@ VERSION_4 = 0x0004
 
 ENDOFCHAIN = 0xfffffffe
 FREESECT = 0xffffffff
-

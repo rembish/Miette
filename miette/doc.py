@@ -1,7 +1,10 @@
 import os
 from struct import unpack
 
-from miette.cfb.reader import CfbReader
+from miette.cfb import CfbReader
+
+
+__all__ = ['DocReader']
 
 
 class DocReader(CfbReader):
@@ -10,6 +13,7 @@ class DocReader(CfbReader):
             Microsoft Word Document Reader (no markup)
 
             Usage example:
+            >>> from miette.doc import DocReader
             >>> doc = DocReader('document.doc')
             >>> print doc.read()
             >>> print doc.word_document.get_short(0x000a)
