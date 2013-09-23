@@ -14,7 +14,7 @@ with open('README') as readmeFile:
 
 setup(
     name='miette',
-    version='1.2',
+    version='1.3',
     description='Miette is a light-weight Microsoft Office documents reader',
     long_description=long_desc,
     author='Alex Rembish',

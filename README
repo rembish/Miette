@@ -5,3 +5,9 @@ reading and, maybe converting (in future) Microsoft Office documents.
 
 Thanks to contributor(s):
 Jason Brechin <brechinj[at]gmail[daht]com
+
+It'll be last version of Miette 1.x project. Now this project has readable
+code, better exception management, but has no future in current state. I'll
+try to start child project with better semantic and logic. See ya soon.
+
+With best wishes, yours Alex Rembish.

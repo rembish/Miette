@@ -2,6 +2,7 @@ import os
 from struct import unpack
 
 from miette.cfb import CfbReader
+from miette.exceptions import MietteFormatError
 
 
 __all__ = ['DocReader']
@@ -14,6 +15,7 @@ class DocReader(CfbReader):
 
             Usage example:
             >>> from miette.doc import DocReader
+
             >>> doc = DocReader('document.doc')
             >>> print doc.read()
             >>> print doc.word_document.get_short(0x000a)
@@ -40,8 +42,9 @@ class DocReader(CfbReader):
             self._word_document = self.get_entry_by_name('WordDocument')
             w_ident = self._word_document.get_short(0x0000)
             if w_ident != 0xa5ec:
-                raise Exception('wIdent is an unsigned integer that specifies '
-                                + 'that this is a Word Binary File. This value MUST be 0xA5EC.')
+                raise MietteFormatError('wIdent is an unsigned integer that '
+                                        'specifies that this is a Word Binary '
+                                        'File. This value MUST be 0xA5EC.')
         return self._word_document
 
     @property
@@ -51,7 +54,7 @@ class DocReader(CfbReader):
         """
         if not self._n_table:
             a_to_m = self.word_document.get_short(0x000a)
-            n_table_name = '1Table' if (a_to_m & 0x0200) == 0x0200 else '0Table'
+            n_table_name = '1Table' if a_to_m & 0x0200 == 0x0200 else '0Table'
             self._n_table = self.get_entry_by_name(n_table_name)
 
         return self._n_table
@@ -68,7 +71,7 @@ class DocReader(CfbReader):
         if size is None:
             size = self.length - self.tell()
 
-        dataBuffer = ""
+        data_buffer = ""
 
         for i in range(len(self.cp) - 1):
             if self.cp[i + 1] < self.tell():
@@ -81,10 +84,10 @@ class DocReader(CfbReader):
             fc_f_compressed = (fc & 0x40000000) == 0x40000000
             fc_fc = fc & 0x3fffffff
 
-            fc_fc += (self.tell() - self.cp[i]) * (2 if not fc_f_compressed else 1)
-            length -= (self.tell() - self.cp[i]) * (1 if not fc_f_compressed else 2)
-            if length > (size - len(dataBuffer)):
-                length = size - len(dataBuffer)
+            fc_fc += (self.tell() - self.cp[i]) * (1 + (not fc_f_compressed))
+            length -= (self.tell() - self.cp[i]) * (1 + fc_f_compressed)
+            if length > (size - len(data_buffer)):
+                length = size - len(data_buffer)
 
             if fc_f_compressed:
                 fc_fc /= 2
@@ -95,13 +98,13 @@ class DocReader(CfbReader):
             part = self.word_document.read(length)
             if not fc_f_compressed:
                 part = part.decode('utf-16')
-            dataBuffer += part
+            data_buffer += part
             self._position += len(part)
 
-            if len(dataBuffer) >= size:
+            if len(data_buffer) >= size:
                 break
 
-        return dataBuffer[:size].encode('utf-8')
+        return data_buffer[:size].encode('utf-8')
 
     def tell(self):
         """
@@ -137,8 +140,8 @@ class DocReader(CfbReader):
         (ccp_text, ccp_ftn, ccp_hdd, ccp_mcr, ccp_atn, ccp_edn, ccp_txbx,
          ccp_hdr_txbx) = unpack('<LLLLLLLL', self.word_document.read(32))
 
-        last_cp = ccp_ftn + ccp_hdd + ccp_mcr + ccp_atn + ccp_edn + ccp_txbx \
-                  + ccp_hdr_txbx
+        last_cp = ccp_ftn + ccp_hdd + ccp_mcr + ccp_atn + ccp_edn + \
+            ccp_txbx + ccp_hdr_txbx
         last_cp += (0 if not last_cp else 1) + ccp_text
 
         pos = fc_clx = self.word_document.get_long(0x01a2)
@@ -151,7 +154,8 @@ class DocReader(CfbReader):
 
             pos += 2
             if cb_grpprl > 0x3fa2:
-                raise Exception('cbGrpprl MUST be less than or equal to 0x3FA2.')
+                raise MietteFormatError('cbGrpprl MUST be less than or '
+                                        'equal to 0x3FA2.')
 
             pos += cb_grpprl
             clxt = self.n_table.get_byte(pos)
@@ -162,12 +166,12 @@ class DocReader(CfbReader):
 
             fc_plc_pcd = pos + 4
             if lcb != lcb_clx - 5:
-                raise Exception('Wrong size of PlcPcd structure')
+                raise MietteFormatError('Wrong size of PlcPcd structure')
         else:
-            raise Exception('PlcPcd.clxt MUST be 0x02')
+            raise MietteFormatError('PlcPcd.clxt MUST be 0x02')
 
         self.n_table.seek(fc_plc_pcd)
-        for i in range(0, lcb_clx - (fc_plc_pcd - fc_clx), 4):
+        for _ in range(0, lcb_clx - (fc_plc_pcd - fc_clx), 4):
             self.cp.append(unpack('<L', self.n_table.read(4))[0])
             if self.cp[-1] == last_cp:
                 self._start_of_pcd = self.n_table.tell()
@@ -175,4 +179,4 @@ class DocReader(CfbReader):
 
                 return
 
-        raise Exception('Last found CP MUST be equal to lastCP')
+        raise MietteFormatError('Last found CP MUST be equal to lastCP')
