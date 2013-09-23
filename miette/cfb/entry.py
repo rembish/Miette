@@ -17,14 +17,14 @@ class Entry(object):
         self.entry_id = entry_id
         self._reader = reader
 
-        self._reader.id.seek(position)
+        self._reader.fid.seek(position)
 
         (self.name, directory_entry_name_length, self.object_type,
          self.color_flag, self.left_sibling_id, self.right_sibling_id,
          self.child_id, self.clsid, self.state_bits, self.creation_time,
          self.modified_time, self.starting_sector_location,
          self.stream_size) = unpack('<64sHBBLLL16sLQQLQ',
-                                    self._reader.id.read(128))
+                                    self._reader.fid.read(128))
 
         self.name = self.name[:directory_entry_name_length]\
             .decode('utf-16').rstrip('\0')
@@ -146,7 +146,7 @@ class Entry(object):
             Link to stream reader: file object for standard streams
             and root entry storage for mini streams
         """
-        return self._reader.id if not self.is_mini_sector \
+        return self._reader.fid if not self.is_mini_sector \
             else self._reader.root_entry
 
     def read(self, size=None):
