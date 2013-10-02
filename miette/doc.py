@@ -1,28 +1,26 @@
-import os
+from cfb import CfbIO
+from cfb.directory.entry import SEEK_SET, SEEK_END, SEEK_CUR
+from cfb.helpers import cached
 from struct import unpack
 
-from miette.cfb import CfbReader
 from miette.exceptions import MietteFormatError
-
 
 __all__ = ['DocReader']
 
 
-class DocReader(CfbReader):
+class DocReader(object):
     def __init__(self, filename):
         """
             Microsoft Word Document Reader (no markup)
 
             Usage example:
-            >>> from miette.doc import DocReader
+            >>> from miette import DocReader
 
             >>> doc = DocReader('document.doc')
             >>> print doc.read()
             >>> print doc.word_document.get_short(0x000a)
         """
-        super(DocReader, self).__init__(filename)
-        self._word_document = None
-        self._n_table = None
+        self.io = CfbIO(filename)
 
         self.cp = []
         self.length = None
@@ -33,31 +31,24 @@ class DocReader(CfbReader):
         self._position = 0
         self.seek(0)
 
-    @property
+    @cached
     def word_document(self):
-        """
-            Tunneling for WordDocument stream
-        """
-        if not self._word_document:
-            self._word_document = self.get_entry_by_name('WordDocument')
-            w_ident = self._word_document.get_short(0x0000)
-            if w_ident != 0xa5ec:
-                raise MietteFormatError('wIdent is an unsigned integer that '
-                                        'specifies that this is a Word Binary '
-                                        'File. This value MUST be 0xA5EC.')
-        return self._word_document
+        """ Tunneling for WordDocument stream """
 
-    @property
+        word_document = self.io['WordDocument']
+        w_ident = word_document.get_short(0x0000)
+        if w_ident != 0xa5ec:
+            raise MietteFormatError('wIdent is an unsigned integer that '
+                                    'specifies that this is a Word Binary '
+                                    'File. This value MUST be 0xA5EC.')
+        return word_document
+
+    @cached
     def n_table(self):
-        """
-            Tunneling for 0Table/1Table stream
-        """
-        if not self._n_table:
-            a_to_m = self.word_document.get_short(0x000a)
-            n_table_name = '1Table' if a_to_m & 0x0200 == 0x0200 else '0Table'
-            self._n_table = self.get_entry_by_name(n_table_name)
-
-        return self._n_table
+        """ Tunneling for 0Table/1Table stream  """
+        a_to_m = self.word_document.get_short(0x000a)
+        n_table_name = '1Table' if a_to_m & 0x0200 == 0x0200 else '0Table'
+        return self.io[n_table_name]
 
     def read(self, size=None):
         """
@@ -112,7 +103,7 @@ class DocReader(CfbReader):
         """
         return self._position
 
-    def seek(self, offset, whence=os.SEEK_SET):
+    def seek(self, offset, whence=SEEK_SET):
         """
             Set the .doc's current position, like file's seek(). The whence
             argument is optional and defaults to os.SEEK_SET or 0 (absolute
@@ -120,11 +111,11 @@ class DocReader(CfbReader):
             relative to the current position) and os.SEEK_END or 2 (seek
             relative to the .doc's end). There is no return value.
         """
-        if whence == os.SEEK_SET:
+        if whence == SEEK_SET:
             self._position = offset
-        elif whence == os.SEEK_CUR:
+        elif whence == SEEK_CUR:
             self._position += offset
-        elif whence == os.SEEK_END:
+        elif whence == SEEK_END:
             self._position = self.length - offset
 
         if self._position < 0:
