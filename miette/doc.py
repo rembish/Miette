@@ -81,7 +81,7 @@ class DocReader(object):
                 length = size - len(data_buffer)
 
             if fc_f_compressed:
-                fc_fc /= 2
+                fc_fc //= 2
             else:
                 length *= 2
 
@@ -89,6 +89,10 @@ class DocReader(object):
             part = self.word_document.read(length)
             if not fc_f_compressed:
                 part = part.decode('utf-16')
+            else:
+                # These parts have ANSI according the .doc fileformat docu.
+                # (Yet whe never saw non-ascii chars.)
+                part = part.decode('windows-1252')  # ANSI == windows-1252
             data_buffer += part
             self._position += len(part)
 
