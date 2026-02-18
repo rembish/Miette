@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "miette"
+version = "2.0.1"
+description = "Miette is a light-weight Microsoft Office documents reader"
+readme = "README.md"
+license = { text = "BSD-2-Clause" }
+authors = [{ name = "Alex Rembish", email = "alex@rembish.org" }]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing",
+]
+dependencies = ["cfb"]
+
+[project.urls]
+Homepage = "https://github.com/rembish/Miette"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "black>=24",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pre-commit>=3",
+]
+
+[tool.setuptools.packages.find]
+include = ["miette*"]
+
+[tool.setuptools.package-data]
+"miette" = ["py.typed"]
+"tests" = ["data/*.doc"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

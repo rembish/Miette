@@ -1,6 +1,11 @@
+"""Miette exception hierarchy."""
+
+__all__ = ["MietteError", "MietteFormatError"]
+
+
 class MietteError(Exception):
-    pass
+    """Base exception for all Miette errors."""
 
 
 class MietteFormatError(MietteError):
-    pass
+    """Raised when a document violates the Word Binary File Format spec."""
