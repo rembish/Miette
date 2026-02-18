@@ -93,8 +93,7 @@ def test_bad_wident_raises(reader: DocReader) -> None:
     del reader.__dict__["word_document"]
     mock_entry = MagicMock()
     mock_entry.get_short.return_value = 0x0000
-    with (
-        patch.object(CfbIO, "__getitem__", return_value=mock_entry),
-        pytest.raises(MietteFormatError, match="wIdent"),
+    with patch.object(CfbIO, "__getitem__", return_value=mock_entry), pytest.raises(
+        MietteFormatError, match="wIdent"
     ):
         _ = reader.word_document
