@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.2 (2026-02-18)
+
+- Lower `requires-python` to `>=3.8`; add `typing_extensions` runtime dependency
+- Add `from __future__ import annotations` to `doc.py`
+- Switch `from typing import Self` to `from typing_extensions import Self` in `doc.py`
+- Expand CI matrix to Python 3.8, 3.10, 3.12, 3.13; split lint and test jobs
+- Add `tox.ini` and `make tox` target for local multi-version testing
+
 ## 2.0.1 (2026-02-18)
 
 - Modernise test suite: autouse `suppress_warnings` with `catch_warnings()` + yield, `reader` fixture with proper teardown via context manager

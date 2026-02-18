@@ -1,12 +1,14 @@
 """Microsoft Word Document (.doc) reader — extracts plain text."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from pathlib import Path
 from struct import unpack
-from typing import Self
 
 from cfb import CfbIO
 from cfb.directory.entry import SEEK_CUR, SEEK_END, SEEK_SET, Entry
+from typing_extensions import Self
 
 from miette.exceptions import MietteFormatError
 

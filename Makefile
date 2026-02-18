@@ -2,7 +2,7 @@ VENV   := .venv
 PYTHON := $(VENV)/bin/python
 PIP    := $(VENV)/bin/pip
 
-.PHONY: help install lint format typecheck test pre-commit clean
+.PHONY: help install lint format typecheck test tox pre-commit clean
 
 help:
 	@echo "Usage: make <target>"
@@ -12,6 +12,7 @@ help:
 	@echo "  format      run black"
 	@echo "  typecheck   run mypy"
 	@echo "  test        run pytest with coverage"
+	@echo "  tox         run tests across py38, py310, py312"
 	@echo "  pre-commit  install pre-commit hooks"
 	@echo "  clean       remove build artifacts and caches"
 
@@ -36,6 +37,9 @@ typecheck: $(VENV)/bin/activate
 
 test: $(VENV)/bin/activate
 	$(VENV)/bin/pytest --cov=miette --cov-report=term-missing
+
+tox: $(VENV)/bin/activate
+	$(VENV)/bin/tox
 
 pre-commit: $(VENV)/bin/activate
 	$(VENV)/bin/pre-commit install
