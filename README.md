@@ -5,7 +5,7 @@ Miette is a "small sweet thing" in French.
 In another way, Miette is a light-weight, low-memory-usage library for reading
 Microsoft Office documents — starting with Word Binary Files (`.doc`).
 
-Requires Python 3.12+ and the [cfb](https://github.com/rembish/cfb) library.
+Requires Python 3.8+ and the [cfb](https://github.com/rembish/cfb) library.
 
 ## Usage
 
@@ -24,6 +24,7 @@ make format       # run black
 make lint         # run ruff
 make typecheck    # run mypy
 make test         # run pytest with coverage
+make tox          # run tests across Python 3.8, 3.10, and 3.12
 make pre-commit   # install pre-commit hooks
 make clean        # remove build artifacts and caches
 ```
