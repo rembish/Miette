@@ -7,13 +7,12 @@ name = "miette"
 version = "2.0.2"
 description = "Miette is a light-weight Microsoft Office documents reader"
 readme = "README.md"
-license = { text = "BSD-2-Clause" }
+license = "BSD-2-Clause"
 authors = [{ name = "Alex Rembish", email = "alex@rembish.org" }]
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -25,10 +24,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Text Processing",
 ]
-dependencies = ["cfb", "typing_extensions"]
+dependencies = ["cfb>=0.9.3", "typing_extensions"]
 
 [project.urls]
 Homepage = "https://github.com/rembish/Miette"
+Repository = "https://github.com/rembish/Miette"
+Changelog = "https://github.com/rembish/Miette/blob/master/CHANGELOG.md"
+Issues = "https://github.com/rembish/Miette/issues"
 
 [project.optional-dependencies]
 dev = [

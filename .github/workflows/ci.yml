@@ -17,9 +17,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install cfb (not yet on PyPI)
-        run: pip install git+https://github.com/rembish/cfb.git
-
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
@@ -45,9 +42,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install cfb (not yet on PyPI)
-        run: pip install git+https://github.com/rembish/cfb.git
 
       - name: Install dependencies
         run: pip install -e ".[dev]"

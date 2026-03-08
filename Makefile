@@ -2,7 +2,7 @@ VENV   := .venv
 PYTHON := $(VENV)/bin/python
 PIP    := $(VENV)/bin/pip
 
-.PHONY: help install lint format typecheck test tox pre-commit clean
+.PHONY: help install lint format typecheck test tox pre-commit build publish clean
 
 help:
 	@echo "Usage: make <target>"
@@ -14,12 +14,13 @@ help:
 	@echo "  test        run pytest with coverage"
 	@echo "  tox         run tests across py38, py310, py312"
 	@echo "  pre-commit  install pre-commit hooks"
+	@echo "  build       build sdist and wheel"
+	@echo "  publish     upload to PyPI with twine"
 	@echo "  clean       remove build artifacts and caches"
 
 $(VENV)/bin/activate: pyproject.toml
 	python3 -m venv $(VENV)
 	$(PIP) install --upgrade pip
-	$(PIP) install -e "../cfb"
 	$(PIP) install -e ".[dev]"
 	touch $(VENV)/bin/activate
 
@@ -40,6 +41,14 @@ test: $(VENV)/bin/activate
 
 tox: $(VENV)/bin/activate
 	$(VENV)/bin/tox
+
+build: $(VENV)/bin/activate
+	$(PIP) install build
+	$(PYTHON) -m build
+
+publish: build
+	$(PIP) install twine
+	$(VENV)/bin/twine upload dist/*
 
 pre-commit: $(VENV)/bin/activate
 	$(VENV)/bin/pre-commit install

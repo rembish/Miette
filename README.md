@@ -29,9 +29,6 @@ make pre-commit   # install pre-commit hooks
 make clean        # remove build artifacts and caches
 ```
 
-> **Note:** `cfb` is not yet on PyPI. The Makefile installs it from `../cfb`.
-> For CI, it is installed from GitHub.
-
 ## License
 
 BSD 2-Clause — see [LICENSE](LICENSE).
